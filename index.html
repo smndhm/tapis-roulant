@@ -1,0 +1,325 @@
+<!DOCTYPE html>
+<html lang="">
+
+	<head>
+		<meta charset="utf-8">
+		<meta http-equiv="X-UA-Compatible" content="IE=edge">
+		<meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+		<title>Tapis Roulant</title>
+		<meta name="Description" content="">
+		<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css" integrity="sha384-Gn5384xqQ1aoWXA+058RXPxPg6fy4IWvTNh0E263XmFcJlSAwiGgFAW/dAiS6JXm" crossorigin="anonymous">
+		<style type="text/css" media="screen">
+			.col, [class^='col-'], [class*=' col-'] {
+				padding-right: 5px;
+				padding-left: 5px;
+			}
+			.form-control, .input-group-text {
+				padding-right: .5rem;
+				padding-left: .5rem;
+			}
+			.form-control::placeholder {
+				opacity: .2;
+			}
+			.row-total{
+				display: none;
+			}
+			.row-form-template + .row-form-template + .row-total {
+				display: flex;
+			}
+			#form .btn-add {
+				display: none;
+			}
+			#form > div:nth-last-child(2) .btn-add.can-add {
+				display: inline-block;
+			}
+		</style>
+	</head>
+
+	<body>
+
+		<div class="container">
+
+			<div class="jumbotron">
+				<h1 class="display-4">Tapis Roulant</h1>
+				<p class="lead">Calcul de dénivelé sur tapis roulant.</p>
+				<p>Pour l'ami <a href="https://twitter.com/zatopic" target="_blank">@gil</a>.</p>
+				<!--
+					http://www.kikourou.net/forum/viewtopic.php?f=21&t=26989#p582540
+					https://fr.wikipedia.org/wiki/D%C3%A9nivel%C3%A9
+					https://www.lememento.fr/calcul-pente
+					http://www.bibmath.net/dico/index.php?action=affiche&quoi=c/cosinus.html
+					http://www.skitour.fr/divers/conversion-pourcentage-degre.php
+				-->
+			</div>
+
+			<form id="form" autocomplete="off">
+
+				<div class="form-group row">
+					<div class="col-1"></div>
+					<div class="col">
+						<span class="font-weight-bold">Distance</span>
+					</div>
+					<div class="col">
+						<span class="font-weight-bold">Pente</span>
+					</div>
+					<div class="col-3">
+						<span class="font-weight-bold">Dénivelé</span>
+					</div>
+				</div>
+
+				<div class="form-group row row-form-template">
+					<div class="col-1 text-center">
+						<button type="button" class="btn btn-primary btn-add" onclick="addLine()">+</button>
+					</div>
+					<div class="col input-group">
+						<input type="number" step="any" class="form-control calc-dist" placeholder="1000" onchange="calculate(this)">
+						<div class="input-group-append">
+							<span class="input-group-text">m</span>
+						</div>
+						<div class="input-group-append">
+							<button type="button" class="btn input-group-text" tabindex="-1" data-toggle="modal" data-target="#calcul-modal">⏱️</button>
+						</div>
+					</div>
+					<div class="col input-group">
+						<input type="number" step="any" class="form-control calc-pente" placeholder="2" onchange="calculate(this)">
+						<div class="input-group-append">
+							<span class="input-group-text">%</span>
+						</div>
+					</div>
+					<div class="col-3">
+						<input type="text" readonly class="form-control-plaintext calc-deniv" tabindex="-1">
+					</div>
+				</div>
+
+				<div class="form-group row row-total border-top">
+					<div class="col-1 text-center">
+						<button type="button" class="btn btn-link" data-toggle="modal" data-target="#chart-modal" tabindex="-1">📈</button>
+					</div>
+					<div class="col">
+						<input type="text" readonly class="form-control-plaintext calc-dist-total" tabindex="-1">
+					</div>
+					<div class="col">
+						<input type="text" readonly class="form-control-plaintext calc-pente-total" tabindex="-1">
+					</div>
+					<div class="col-3">
+						<input type="text" readonly class="form-control-plaintext calc-deniv-total" tabindex="-1">
+					</div>
+				</div>
+
+			</form>
+
+		</div>
+
+		<div class="modal fade" id="chart-modal" tabindex="-1" role="dialog" aria-labelledby="chart-modal" aria-hidden="true">
+			<div class="modal-dialog modal-dialog-centered" role="document">
+				<div class="modal-content">
+					<div class="modal-body">
+						
+						<canvas id="myChart" width="1200" height="1200"></canvas>
+
+					</div>
+				</div>
+			</div>
+		</div>
+
+		<div class="modal fade" id="calcul-modal" tabindex="-1" role="dialog" aria-labelledby="calcul-modal" aria-hidden="true">
+			<div class="modal-dialog modal-dialog-centered" role="document">
+				<div class="modal-content">
+					<div class="modal-header">
+						<h5 class="modal-title">Calcul de distance</h5>
+						<button type="button" class="close" data-dismiss="modal" aria-label="Close">
+							<span aria-hidden="true">&times;</span>
+						</button>
+					</div>
+					<div class="modal-body">
+						
+						<form id="form-calcul" autocomplete="off">
+
+							<div class="form-group row">
+								<div class="col">
+									<span class="font-weight-bold">Temps</span>
+								</div>
+								<div class="col">
+									<span class="font-weight-bold">Vitesse</span>
+								</div>
+							</div>
+
+							<div class="form-group row">
+								<div class="col input-group">
+									<input type="number" step="any" class="form-control calc-temps" placeholder="5" onchange="calculateDistance()">
+									<div class="input-group-append">
+										<span class="input-group-text">minutes</span>
+									</div>
+								</div>
+								<div class="col input-group">
+									<input type="number" step="any" class="form-control calc-speed" placeholder="10" onchange="calculateDistance()">
+									<div class="input-group-append">
+										<span class="input-group-text">km/h</span>
+									</div>
+								</div>
+							</div>
+
+						</form>
+
+					</div>
+
+					<div class="modal-footer">
+						<button type="button" class="btn btn-primary" data-dismiss="modal">Calculer</button>
+					</div>
+
+				</div>
+			</div>
+		</div>
+
+		<script src="https://code.jquery.com/jquery-3.2.1.slim.min.js" integrity="sha384-KJ3o2DKtIkvYIK3UENzmM7KCkRr/rE9/Qpg6aAZGJwFDMVNA/GpGFF93hXpG5KkN" crossorigin="anonymous"></script>
+		<!-- <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.12.9/umd/popper.min.js" integrity="sha384-ApNbgh9B+Y1QKtv3Rn7W3mgPxhU9K/ScQsAP7hUibX39j7fakFPskvXusvfa0b4Q" crossorigin="anonymous"></script> -->
+		<script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/js/bootstrap.min.js" integrity="sha384-JZR6Spejh4U02d8jOt6vLEHfe/JQGiRRSQQxSfFWpi1MquVdAyjUar5+76PVCmYl" crossorigin="anonymous"></script>
+
+		<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/2.4.0/Chart.min.js"></script>
+
+		<script type="text/javascript">
+
+			const ctx = document.getElementById('myChart').getContext('2d');
+
+			let chart = new Chart(ctx, {
+			    type: 'scatter',
+			    data: {
+			        datasets: [{
+			            label: "Dénivelé",
+			            borderColor: 'rgb(0, 123, 255)',
+			            fill: false,
+			            lineTension: 0.1
+			        }]
+			    }
+			});
+
+			let $modalFor;
+
+			const $rowFormTemplate = document.querySelector('.row-form-template');
+
+			let $clone = $rowFormTemplate.cloneNode(true);
+
+			const addLine = () => {
+				
+				const $rowFormTemplates = document.querySelectorAll('.row-form-template');
+				
+				const $rowFormTemplate = $rowFormTemplates[$rowFormTemplates.length-1];
+
+				$rowFormTemplate.parentNode.insertBefore($clone.cloneNode(true), $rowFormTemplate.nextSibling);
+
+			};
+
+			const calculate = ( elm ) => {
+				
+				const $rowTemplate = elm.closest('.row-form-template');
+
+				const DIST  = Number.parseFloat( $rowTemplate.querySelector('.calc-dist').value );
+				const PENTE = Number.parseFloat( $rowTemplate.querySelector('.calc-pente').value );
+
+				// console.log(DIST, PENTE);
+
+				if ( !isNaN(DIST) && !isNaN(PENTE) ) {
+
+					const $rowDeniv = $rowTemplate.querySelector('.calc-deniv');
+
+					$rowDeniv.value = __calcul( DIST, PENTE ) || 0 ;
+
+					__updateTotal();
+
+					$rowTemplate.querySelector('.btn-add').classList.add('can-add');
+
+				}
+
+			};
+
+			const calculateDistance = () => {
+
+				const TEMPS = Number.parseFloat( document.querySelector('.calc-temps').value );
+				const SPEED = Number.parseFloat( document.querySelector('.calc-speed').value );
+
+				if ( !isNaN(TEMPS) && !isNaN(SPEED) ) {
+
+					const $rowDist = $modalFor.querySelector('.calc-dist');
+
+					const DIST = SPEED * TEMPS / 60 * 1000;
+
+					$rowDist.value = Math.round( DIST * 100 ) / 100;
+
+				}
+
+			};
+
+			const __calcul = ( d, p ) => {
+
+				const αd = 360 / ( 2 * Math.PI ) * Math.atan( p / 100 );
+
+				const αr = Math.tan( αd * Math.PI / 180 );
+
+				const D = d * Math.cos( αr );
+
+				const Δh = D * p / 100;
+
+				//console.log( αd, αr, D, Δh);
+
+				return Math.round( Δh * 100 ) / 100;
+
+			};
+
+			const __updateTotal = () => {
+
+				//DIST
+				const DIST_ALL = [...document.querySelectorAll('.calc-dist')].map( ( elm ) => Number.parseFloat( elm.value ) || 0 );
+				const DIST_TOTAL = DIST_ALL.reduce( ( a, b ) => a + b );
+				
+				document.querySelector('.calc-dist-total').value = ( Math.round( DIST_TOTAL * 100 ) /100 ) + 'm' ;
+
+				//DENIV
+				const DENIV_ALL = [...document.querySelectorAll('.calc-deniv')].map( ( elm ) => Number.parseFloat( elm.value ) || 0 );
+				const DENIV_TOTAL = DENIV_ALL.reduce( ( a, b ) => a + b );
+
+				document.querySelector('.calc-deniv-total').value = ( Math.round( DENIV_TOTAL * 100 ) /100 ) + 'm' ;
+
+				//PENTE
+				//const hypotenuse = Math.sqrt( Math.pow(DIST_TOTAL, 2) + Math.pow(DENIV_TOTAL, 2) );
+				const αd = Math.atan(-DENIV_TOTAL/-DIST_TOTAL) * 180 / Math.PI;
+				const PENTE_TOTAL = Math.tan( αd * ( 2 * Math.PI / 360 ) ) * 100;
+				
+				document.querySelector('.calc-pente-total').value = ( Math.round( PENTE_TOTAL * 100 ) / 100 ) + '%';
+
+				__updateChart( DIST_ALL, DENIV_ALL );
+
+			};
+
+			const __updateChart = ( dist, deniv ) => {
+
+				const l = dist.length;
+				let x = 0;
+				let y = 0;
+				let data = [{x:x, y:y}];
+
+				for (let i = 0; i < l; i++) {
+					x+=dist[i];
+					y+=deniv[i];
+					data.push({x:x, y:y});
+				}
+
+				//console.log(data);
+
+				chart.reset();
+				chart.data.datasets[0].data = data;
+				chart.update();
+
+			};
+
+			$('#calcul-modal').on('show.bs.modal', function (event) {
+				
+				const $button = $(event.relatedTarget);
+				
+				$modalFor = $button.closest('.row-form-template')[0];
+			})
+
+		</script>
+
+	</body>
+
+</html>
